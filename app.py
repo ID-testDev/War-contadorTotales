@@ -158,8 +158,28 @@ def compute_totals(messages: list[dict]):
     warnings: list[dict] = []
     breakdown: list[dict] = []  # por mensaje, para el debug expander
 
+def clean_label(s: str) -> str:
+    """Quita asteriscos/backticks de markdown para que la etiqueta del sub-juego se vea limpia."""
+    return re.sub(r'[`*_]+', '', s).strip()
+
+
+def compute_totals(messages: list[dict]):
+    totals: dict[str, int] = defaultdict(int)
+    warnings: list[dict] = []
+    breakdown: list[dict] = []  # cada entrada: {"label": ..., "totals": {...}}
+    score_line_count = 0
+
     for msg in messages:
-        msg_totals: dict[str, int] = {}
+        header = msg["header"]
+        current_label = header
+        current_block_totals: dict[str, int] = {}
+
+        def flush_block():
+            nonlocal current_block_totals, current_label
+            if current_block_totals:
+                breakdown.append({"label": current_label, "totals": current_block_totals})
+            current_block_totals = {}
+
         for line_idx, line in enumerate(msg["lines"]):
             if not line.strip():
                 continue
@@ -168,13 +188,22 @@ def compute_totals(messages: list[dict]):
             is_header_line = (line_idx == 0)
 
             if not nums and not teams_found:
-                continue  # línea irrelevante (título, texto normal, etc.)
+                # Puede ser el título de un NUEVO sub-juego dentro del mismo mensaje
+                # (ej. "🦄 COMPLETA 🦄" en medio de un mensaje con varias dinámicas).
+                # La línea 0 (título del mensaje) nunca dispara esto, ya sirve de label inicial.
+                if not is_header_line:
+                    label = clean_label(line)
+                    if label:
+                        flush_block()
+                        current_label = f"{header} → {label}"
+                continue
 
             if nums and len(teams_found) == 1:
                 number = int(nums[0].replace(",", "").replace(".", ""))
                 team = teams_found[0]
                 totals[team] += number
-                msg_totals[team] = msg_totals.get(team, 0) + number
+                current_block_totals[team] = current_block_totals.get(team, 0) + number
+                score_line_count += 1
                 if len(nums) > 1:
                     warnings.append({
                         "header": msg["header"],
@@ -208,10 +237,9 @@ def compute_totals(messages: list[dict]):
                     "reason": "Se encontró un emoji de equipo pero no pude extraer un número.",
                 })
 
-        if msg_totals:
-            breakdown.append({"header": msg["header"], "totals": msg_totals})
+        flush_block()
 
-    return totals, warnings, breakdown
+    return totals, warnings, breakdown, score_line_count
 
 
 # ----------------------------
@@ -257,10 +285,11 @@ if st.button("Calcular total del torneo"):
     if not messages:
         st.error("No se detectó ningún contenido para procesar. Revisa que hayas pegado el texto.")
     else:
-        totals, warnings, breakdown = compute_totals(messages)
+        totals, warnings, breakdown, score_line_count = compute_totals(messages)
 
         st.write(f"Mensajes/bloques detectados: **{len(messages)}**")
-        st.write(f"Con puntajes reconocidos: **{len(breakdown)}**")
+        st.write(f"Líneas de puntaje reconocidas: **{score_line_count}**")
+        st.write(f"Sub-juegos/bloques con puntaje: **{len(breakdown)}**")
 
         if warnings:
             st.warning(f"{len(warnings)} línea(s) necesitan revisión:")
@@ -279,9 +308,9 @@ if st.button("Calcular total del torneo"):
                 for emo in TEAM_ORDER
             ])
 
-        with st.expander("Ver desglose por mensaje (debug)"):
+        with st.expander(f"Ver desglose por sub-juego ({len(breakdown)} bloques) — debug"):
             for item in breakdown:
-                st.markdown(f"**{item['header'][:100]}**")
+                st.markdown(f"**{item['label'][:120]}**")
                 for emo, pts in sorted(item["totals"].items(), key=lambda x: (-x[1], x[0])):
                     st.write(f"  {emo}: {format_points(pts)}")
                 st.markdown("---")
