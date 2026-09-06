@@ -240,9 +240,6 @@ Si una línea no se puede interpretar con confianza (número sin equipo,
 equipo sin número, o algo ambiguo), no se descarta en silencio: aparece
 en la lista de advertencias con el mensaje y la línea exacta para que la
 revises tú mismo.
-
-**Nota:** usa el mismo `teams.json` que la app de "Conteo de puntos Warriors".
-Si cambias los emojis/equipos allá, copia el archivo actualizado también aquí.
 """
     )
 
