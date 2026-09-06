@@ -1,4 +1,4 @@
-# total_torneo.py
+# total_copa.py
 import streamlit as st
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
@@ -245,8 +245,8 @@ def compute_totals(messages: list[dict]):
 # ----------------------------
 # Streamlit UI
 # ----------------------------
-st.set_page_config(page_title="Total del torneo Warriors", layout="centered")
-st.title("📈 Total del torneo Warriors")
+st.set_page_config(page_title="Total de Copa Warriors", layout="centered")
+st.title("📈 Total de la copa Warriors")
 
 with st.expander("ℹ️ Cómo funciona"):
     st.markdown(
@@ -279,7 +279,7 @@ tipo_total = st.radio(
 
 text = st.text_area("Pega aquí los mensajes de WhatsApp (o un Total parcial anterior + mensajes nuevos)", height=520)
 
-if st.button("Calcular total del torneo"):
+if st.button("Calcular total de la copa"):
     messages = split_messages(text)
 
     if not messages:
