@@ -1,0 +1,8 @@
+{
+  "teams": [
+    {"emoji": "🧡", "name": "Equipo Naranja"},
+    {"emoji": "💜", "name": "Equipo Morado"},
+    {"emoji": "🩵", "name": "Equipo Celeste"},
+    {"emoji": "🩷", "name": "Equipo Rosa"}
+  ]
+}
